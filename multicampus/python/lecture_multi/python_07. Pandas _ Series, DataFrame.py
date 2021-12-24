@@ -165,3 +165,4 @@ d3+d5 # c 열이 없으니까
 # b  44  35 NaN
 d3.add(d5, fill_value = 0) # NaN 처리 add 함수의 fill_value 파라미터를 사용하면 처리 가능하다.
 d3+d4
+print("hi")

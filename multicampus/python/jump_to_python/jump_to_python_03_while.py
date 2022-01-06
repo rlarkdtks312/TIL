@@ -1,10 +1,10 @@
-# while문의 기본 구조
+## while문의 기본 구조
 # while <조건문>:
 #     <수행할 문장1>
 #     <수행할 문장2>
 #     <수행할 문장3>
 
-# while 예제 
+## while 예제
 treeHit = 0
 while treeHit < 100:
     treeHit = treeHit +1

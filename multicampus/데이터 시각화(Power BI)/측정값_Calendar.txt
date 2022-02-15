@@ -1,0 +1,13 @@
+Calendar = ADDCOLUMNS(
+            CALENDAR(Date(2019,1,1), Date(2019,6,30)),
+            "연도", Year([Date]),
+            "분기", Format([Date], "Q")&"분기",
+            "월No", Month([Date]),
+            "연월", Format([Date], "yyyy-mm"),
+            "월", Format([Date], "mm"),
+            "월(영문)", Format([Date], "mmm"),
+            "일", Format([Date], "dd"),
+            "요일", Format([Date], "aaa"),
+            "요일No", WEEKDAY([Date],2), 
+            "주", WEEKNUM([Date])
+            )

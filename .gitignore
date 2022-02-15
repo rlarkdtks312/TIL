@@ -13,6 +13,11 @@ Ch_2_Opencv_basic
 *.zip
 *.html
 privacy.py
+./multicampus/python/jupyter_notebook/Kacher/*.csv
+따릉이/
+07_공공데이터_따릉이 데이터 시각화.pbix
+imdb_master.csv
+
 # Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,python
 

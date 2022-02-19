@@ -28,7 +28,13 @@ Created on 2021
 
 
 #%%
+import pandas as pd
+import numpy as np
 
+data11 = pd.read_csv('./DataSet/DataSet_11.csv')
+data11
+data11.columns
+# ['Country', 'Happiness_Rank', 'Happiness_Score', 'year']
 # =============================================================================
 # 1.분석을 위해 3년 연속 행복지수가 기록된 국가의 데이터를 사용하고자 한다. 
 # 3년 연속 데이터가 기록되지 않은 국가의 개수는?
@@ -37,12 +43,23 @@ Created on 2021
 # 활용하시오.(답안 예시) 1
 # =============================================================================
 
+# 3년 연속 데이터가 기록되지 않은 국가의 개수는?
+(data11.groupby(by='Country').apply(len) < 3).sum()
 
+q1 = data11.groupby(by='Country').apply(len)
+(q1 < 3).sum()
+# 답 : 20
 
+# 3년 연속 데이터가 기록되지 않은 국가 데이터는 제외하고 이를 향후 분석에서 활용
+q1[q1 < 3]
 
+# 다른 방법
+q1_1 = pd.pivot_table(data11, index='Country', columns='year', 
+                      values='Happiness_Score')
 
+q1_1.isna().any(axis=1).sum()
 
-
+q1_2 = q1_1.dropna()
 
 #%%
 
@@ -51,22 +68,18 @@ Created on 2021
 # 행복지수 증감률을 산출하고 행복지수 증감률이 가장 높은 3개 국가를 행복지수가
 # 높은 순서대로 차례대로 기술하시오.
 # 증감률 = (2017년행복지수−2015년행복지수)/2
-# 
-# - 연도는 년월(YEAR_MONTH) 변수로부터 추출하며, 연도별 매출금액합계는 1월부터
-# 12월까지의 매출 총액을 의미한다. (답안 예시) Korea, Japan, China
 # =============================================================================
 
+q2 = q1_2.copy()
 
+q2['ratio'] = (q2[2017] - q2[2015])/2
 
-
-
-
-
-
-
-
-
-
+q2['ratio'].nlargest(3)
+'''
+Latvia     0.3760
+Romania    0.3505
+Togo       0.3280
+'''
 
 #%%
 
@@ -74,25 +87,48 @@ Created on 2021
 # 3.(1번 산출물을 활용하여) 년도별 행복지수 평균이 유의미하게 차이가 나는지
 # 알아보고자 한다. 
 # 이와 관련하여 적절한 검정을 사용하고 검정통계량을 기술하시오.
-# - 해당 검정의 검정통계량은 자유도가 2인 F 분포를 따른다.
+# - 해당 검정의 검정통계량은 자유도가 2인 F 분포를 따른다.(자유도: 그룹 갯수 -1)
 # - 검정통계량은 소수점 넷째 자리까지 기술한다. (답안 예시) 0.1234
 # =============================================================================
 
 # (참고)
 # from statsmodels.formula.api import ols
 # from statsmodels.stats.anova import anova_lm
+# 귀무가설 Ma = Mb = Mc = k 각각의 연도가 행복만족도가 같다.
+# 대립가설: 적어도 하나는 K와 같지 않다.
+# 이것을 분산을 이용해서 평균 차이가 있는지 분석하는 것이 분산 분석, ANOVA이다.
 
+from scipy.stats import f_oneway # 분산 분석, ANOVA
+from statsmodels.formula.api import ols
+from statsmodels.stats.anova import anova_lm
 
+q3_1 = f_oneway(q1_2[2015], q1_2[2016], q1_2[2017])
 
+# F_onewayResult(statistic=0.004276725037689305, pvalue=0.9957324489944479)
 
+# 답 : 검정통계량 = 0.0042
+dir(q3_1)
 
+country_list = q1[q1==3].index
 
+q3_2 = data11[data11['Country'].isin(country_list)]
+q3_2.columns
 
+# 독립변수를 명목형? 범주형? 하나만 넣으면 자동으로 분산 분석을 한다.
+anova = ols('Happiness_Score~C(year)', data=q3_2).fit()
+q3_out = anova_lm(anova)
 
+# pvalue : 0.995732 으로 귀무가설을 따르게 되지만 
+# 혹시나 귀무가설을 기각하게 되면 어떤 집단간 평균 차이가 있는지 분석 할 필요가 있다.
+# 이것을 분산분석후하는 사후검증이라고 한다. 
 
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-
-
+print(pairwise_tukeyhsd(q3_2['Happiness_Score'], q3_2['year']))
+q3_out2 = pairwise_tukeyhsd(q3_2['Happiness_Score'], q3_2['year'])
+dir(q3_out2)
+q3_out2.reject
+print(q3_out2)
 #%%
 
 # =============================================================================
@@ -395,10 +431,16 @@ Created on 2021
 # =============================================================================
 # =============================================================================
 
+import pandas as pd
+import numpy as np
 
+pos1 = pd.read_csv('./Dataset/Dataset_05_Mart_POS.csv')
+pos1.columns
+# ['Member_number', 'Date', 'itemDescription'] : key는 itemDescription
 
-
-
+list1 = pd.read_csv('./Dataset/Dataset_05_item_list.csv')
+list1.columns
+# ['prod_id', 'prod_nm', 'alcohol', 'frozen'] : key는 prod_nm
 #%%
 
 # =============================================================================
@@ -406,11 +448,13 @@ Created on 2021
 # 제품의 판매 개수는? (답안 예시) 1
 # =============================================================================
 
+# 가장 많은 제품이 팔린 날짜
+pos1.Date.value_counts().idxmax()
+# '2015-01-21'
 
-
-
-
-
+# 그 날짜에 가장 많이 팔린 제품
+pos1[pos1.Date == '2015-01-21']['itemDescription'].value_counts().nlargest(1)
+# 답 : soda 7
 
 
 
@@ -433,16 +477,54 @@ Created on 2021
 # =============================================================================
 
 
+# 1. 변수 생성, 요일, 월, 금토여부
+pos2 = pos1.copy()
+pos2
+pos2.dtypes
+
+pd.to_datetime(pos2['Date']).dt.day
+pd.to_datetime(pos2['Date']).dt.day_name(locale='ko_kr')
+
+# Locale 영어 요일명을 한글로 변환하기 위해 사용
+import locale
+locale.locale_alias # locale 명 확인
+
+pos2['day'] = pd.to_datetime(pos2['Date']).dt.day_name(locale='ko_kr')
+pos2['month'] = pd.to_datetime(pos2['Date']).dt.month
+
+pos2['week'] = np.where(pos2['day'].isin(['금요일', '토요일']), 1, 0)
+
+# 2. 병합, left join
+merge1 = pd.merge(pos2, list1, 
+                  left_on='itemDescription',
+                  right_on='prod_nm',
+                  how='left')
 
 
+# 3. 1분기 데이터 필터링
+merge2 = merge1[merge1.month.isin([1,2,3])]
+len(merge1)
+len(merge2)
 
+# 4. 일별 주류제춤 구매 제품 
+merge3 = pd.pivot_table(merge2, 
+                        index='Date', 
+                        columns = 'week', 
+                        values='alcohol', 
+                        aggfunc='sum')
 
+# 5. 금토 여부에 따라 일별 주류제품 구매 제품 수 평균 비교
+from scipy.stats import ttest_ind
 
+q2_out = ttest_ind(merge3[0].dropna(), merge3[1].dropna(), equal_var=False)
 
-
-
-
-
+# 6. p-value는 반올림하여 소수점 둘째 자리까지 기술
+# 답: pvalue=0.02
+# nan 값이 나온다는 것은 결측치가 나와서 문제가 생긴다는 것이다
+q2_out
+# statistic=2.335264239960428 값이 양수가 나왔다는 의미는 앞쪽에 넣은 데이터의 평균량이 더 크다라는 것이다.
+# 즉 마트에는 평일 주류 판매량이 더 높다는 것이다.
+# Ttest_indResult(statistic=2.335264239960428, pvalue=0.023062611047582393)
 
 
 
@@ -461,24 +543,38 @@ Created on 2021
 # from statsmodels.stats.anova import anova_lm
 # =============================================================================
 
+pos1.groupby(by = 'itemDescription').count()['Date'].nlargest(10).index
+
+var_list = ['whole milk', 'other vegetables', 'rolls/buns', 'sausage', 'soda',
+            'yogurt', 'tropical fruit', 'root vegetables', 'citrus fruit',
+            'frankfurter']
+
+pos1[pos1['itemDescription'].isin(var_list)]
 
 
+# 1. 1년동안 가장 많이 판매된 10개 상품을 주력 상품으로 설정
+top10 = pos2.itemDescription.value_counts().nlargest(10).index
 
+# 2. 요일별 주력 상품의 판매 개수
+q3 = pos2[pos2.itemDescription.isin(top10)]
 
+q3_tab = q3.groupby(by=['Date', 'day'])['itemDescription'].apply(len).reset_index()
+q3_tab
 
+# 3. 요일별 주력 상품의 판매 개수의 평균이 유의미하게 차이가 나는지
+from statsmodels.formula.api import ols
+q3_tab.columns
 
+q3_out = ols('itemDescription~day', q3_tab).fit()
 
+# 4. p-value는 반올림하여 소수점 둘째 자리까지 기술
 
+from statsmodels.stats.anova import anova_lm
+q3_out2 = anova_lm(q3_out)
+q3_out2
+# 자유도 6맞네 요일 7개니까 -1 하면 맞음
 
-
-
-
-
-
-
-
-
-
+# 답: 0.52
 
 
 

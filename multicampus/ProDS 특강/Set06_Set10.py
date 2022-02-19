@@ -40,7 +40,19 @@ Created on 2021
 # =============================================================================
 # =============================================================================
 
+import pandas as pd
+import numpy as np
 
+data1 = pd.read_csv('./Dataset/Dataset_06.csv')
+data1
+data1.info()
+data1.isnull().sum()
+data1.columns
+
+#['id', 'date', 'price', 'bedrooms', 'bathrooms', 'sqft_living',
+#       'sqft_lot', 'floors', 'waterfront', 'view', 'condition', 'grade',
+#       'sqft_above', 'sqft_basement', 'yr_built', 'yr_renovated', 'zipcode',
+#       'sqft_living15', 'sqft_lot15']
 
 #%%
 
@@ -50,8 +62,11 @@ Created on 2021
 # 소수점 이하는 버리고 정수부만 기술하시오. (답안 예시) 1234567
 # =============================================================================
 
+price0 = data1[data1.waterfront == 0]['price'].mean()
+price1 = data1[data1.waterfront == 1]['price'].mean()
 
-
+abs(price1 - price0)
+# 답 :1167272
 
 
 
@@ -67,11 +82,16 @@ Created on 2021
 # 
 # =============================================================================
 
+var_list = ['price', 'bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot', 
+            'floors', 'yr_built']
 
+temp = abs(data1[var_list].corr())['price'].drop('price', axis=0)
+temp.max()
+temp.nlargest(1)
+temp.min()
+temp.idxmin()
 
-
-
-
+# sqft_living, yr_built
 
 
 
@@ -93,14 +113,29 @@ Created on 2021
 # from sklearn.linear_model import LinearRegression
 # from statsmodels.formula.api import ols
 # =============================================================================
+data6 = data1
+data6
+from sklearn.linear_model import LinearRegression
+from statsmodels.formula.api import ols
+
+var_list = data6.columns.drop(['id', 'date', 'zipcode', 'price'])
+
+form1 = 'price~'+'+'.join(var_list)
+form1
+
+ols1 = ols(form1, data6).fit()
+
+# 각 독립변수별 유의성 검정
+q3_out = ols1.pvalues.drop('Intercept')
+(q3_out < 0.05).sum()
 
 
+# 회귀계수 파악을 위한 유의성을 갖지 못하는 값을 분리 params를 하면 회귀 계수를 얻을 수 있다.
+q3_sel_list = q3_out.index[q3_out < 0.05]
+q3_sel_list
+(ols1.params[q3_sel_list] < 0).sum()
 
-
-
-
-
-
+# 답 : 13, 2
 #%%
 
 # =============================================================================
@@ -228,14 +263,20 @@ Created on 2021
 
 #%%
 
+import pandas as pd
+import numpy as np
+
+data8 = pd.read_csv('./Dataset/Dataset_08.csv')
+data8.columns
+# ['RandD_Spend', 'Administration', 'Marketing_Spend', 'State', 'Profit']
 # =============================================================================
 # 1.각 주(State)별 데이터 구성비를 소수점 둘째 자리까지 구하고, 알파벳 순으로
 # 기술하시오(주 이름 기준).
 # (답안 예시) 0.12, 0.34, 0.54
 # =============================================================================
-
-
-
+# normalize=True 구성비를 구할 때
+data8['State'].value_counts(normalize=True).sort_index().values
+# 답: 0.34, 0.32, 0.34
 
 
 
@@ -247,9 +288,9 @@ Created on 2021
 # =============================================================================
 
 
-
-
-
+q2 = data8.groupby(by='State')['Profit'].mean()
+round(q2.max()-q2.min(),)
+# 답 : 14869
 
 
 
@@ -265,15 +306,25 @@ Created on 2021
 # =============================================================================
 
 
+state_list = data8.State.unique()
+# ['New York', 'California', 'Florida']
 
+var_list = ['RandD_Spend', 'Administration', 'Marketing_Spend']
 
+from sklearn.linear_model import LinearRegression
+q3_out = []
 
+for i in state_list:
+    temp = data8[data8.State == i]
+    lm = LinearRegression().fit(temp[var_list], temp['Profit'])
+    pred = lm.predict(temp[var_list])
+    MAPE = (abs(temp['Profit'] - pred) / temp['Profit']).sum() * (100 / len(temp))
+    q3_out.append([i, MAPE])
 
+q3_out = pd.DataFrame(q3_out, columns = ['State', 'mape'])
 
-
-
-
-
+q3_out.loc[q3_out.mape.idxmin(), :]
+# 답 : Florida 5.71
 
 #%%
 
@@ -420,7 +471,16 @@ Created on 2021
 
 
 #%%
+import pandas as pd
+import numpy as np
 
+data10 = pd.read_csv('./Dataset/Dataset_10.csv')
+data10
+data10.columns
+#['model', 'engine_power', 'age_in_days', 'km', 'previous_owners',
+#       'price', 'Unnamed: 6', 'Unnamed: 7', 'Unnamed: 8', 'Unnamed: 9',
+#       'Unnamed: 10', 'Unnamed: 11', 'Unnamed: 12', 'Unnamed: 13',
+#       'Unnamed: 14', 'Unnamed: 15', 'Unnamed: 16']
 # =============================================================================
 # 1.이전 소유자 수가 한 명이고 엔진 파워가 51인 차에 대해 모델별 하루 평균 운행
 # 거리를 산출하였을 때 가장 낮은 값을 가진 모델이 가장 큰 값을 가진 모델에 대한
@@ -429,11 +489,28 @@ Created on 2021
 # (모델별 평균 → 일평균 → 최대최소 비율 계산) (답안 예시) 0.12
 # =============================================================================
 
+# 불필요한 열을 깔끔하게 제거 all 방법은 and라고 생각하면 된다.
+data10 = data10.dropna(how='all', axis=1)
 
+# 이전 소유자 수가 한 명이고 엔진 파워가 51인 차
+q1 = data10[(data10.previous_owners == 1) & (data10.engine_power == 51)]
+q1
 
+len(data10)
+len(q1)
 
+# 모델별 하루 평균 운행거리를 산출
 
+# (1). 모델별 평균
+q1_tab = q1.groupby(by='model')[['age_in_days', 'km']].mean()
 
+# 일평균
+q1_tab['km_per_day']=q1_tab['km']/q1_tab['age_in_days']
+
+# 최대최소 비율 계산
+q1_tab['km_per_day'].min() / q1_tab['km_per_day'].max()
+# 0.9688580804724013
+# 답 : 0.97
 
 
 
@@ -453,14 +530,27 @@ Created on 2021
 # =============================================================================
 
 
+# 운행 일수에 대한 운행 거리를 산출
+q2 = data10.copy()
+q2['km_per_day'] = q2['km'] / q2['age_in_days']
+
+# 위 1번 문제에서 가장 큰 값을 가지고 있던 모델과 가장 낮은 값을 가지고 있던 모델
+max_g = q1_tab['km_per_day'].idxmax()
+min_g = q1_tab['km_per_day'].idxmin()
+
+# 모델 간의 운행 일수 대비 운행거리 평균이 다른지 적절한 통계 검정을 수행
+# 적절한 통계 검정을 수행 : ttest
+
+from scipy.stats import ttest_ind
+
+q2_out = ttest_ind(q2[q2.model == max_g]['km_per_day'], 
+          q2[q2.model ==min_g]['km_per_day'],
+          equal_var=True)
 
 
-
-
-
-
-
-
+# p-value를 소수점 세자리 이하는 버리고 소수점 두자리까지 기술하고 기각 여부를 Y / N로 답
+q2_out.pvalue
+# 답 : 0.13 , Y
 #%%
 
 # =============================================================================
@@ -473,16 +563,33 @@ Created on 2021
 # =============================================================================
 # model = pop이고 이전 소유자수가 2명인 데이터만을 이용하여 회귀모델을 생성하시오.
 
+# 1. 이전 소유자 수가 2인 데이터 필터링
+q3 = data10[data10.previous_owners==2]
 
+# 2. 독립변수 목록 & 모델 목록
+var_list = ['engine_power', 'age_in_days', 'km']
+model_list = q3.model.unique() # ['lounge', 'sport', 'pop']
 
+# 3. 반복적으로 모델 생성
+from sklearn.linear_model import LinearRegression
 
+for i in model_list:
+    temp = q3[q3.model == i]
+    globals()['lm_'+i] = LinearRegression().fit(temp[var_list].values, temp['price'])
+    
 
+# 4. 예측: 예측 시 나온 모델명의 모델을 호출해서 사용
 
+# model : pop / engine_power : 51 / age_in_days : 400 / km : 9500 / previous_owners : 2
+pred = lm_pop.predict([[51,400,9500]])
 
-
-
-
-
+# 10367.53433763
+# 답 : 10367
+pred2 = lm_pop.predict(
+        pd.DataFrame({'engine_power': [51],
+                      'age_in_days': [400],
+                      'km' : [9500]}))
+# 10367.53433763
 
 
 
